@@ -1,0 +1,9 @@
+Manufacturer=Texas Instruments
+PartNumber=SN74HCS273PWR
+PartCategory=Integrated Circuit
+PackageCategory=Small Outline Packages
+PinCount=20
+Version=1.1
+Released=2022-07-06 04:45:25
+Downloaded=2023-02-23 06:04:08
+3D=Y

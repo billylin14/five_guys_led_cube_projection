@@ -1,0 +1,41 @@
+EESchema-LIBRARY Version 2.3
+#encoding utf-8
+#SamacSys ECAD Model SN74HCS273PWR
+#/16491522/1077790/2.49/20/3/Integrated Circuit
+DEF SN74HCS273PWR IC 0 30 Y Y 1 F N
+F0 "IC" 950 300 50 H V L CNN
+F1 "SN74HCS273PWR" 950 200 50 H V L CNN
+F2 "SOP65P640X120-20N" 950 100 50 H I L CNN
+F3 "https://www.ti.com/general/docs/suppproductinfo.tsp?distId=26&gotoUrl=https://www.ti.com/lit/gpn/sn74hcs273" 950 0 50 H I L CNN
+F4 "Flip Flops Octal D-type flip-flops with clear with Schmitt-trigger inputs" 950 -100 50 H I L CNN "Description"
+F5 "1.2" 950 -200 50 H I L CNN "Height"
+F6 "595-SN74HCS273PWR" 950 -300 50 H I L CNN "Mouser Part Number"
+F7 "https://www.mouser.co.uk/ProductDetail/Texas-Instruments/SN74HCS273PWR?qs=QNEnbhJQKvYIJo9rBWLKyw%3D%3D" 950 -400 50 H I L CNN "Mouser Price/Stock"
+F8 "Texas Instruments" 950 -500 50 H I L CNN "Manufacturer_Name"
+F9 "SN74HCS273PWR" 950 -600 50 H I L CNN "Manufacturer_Part_Number"
+DRAW
+X ~CLR 1 0 0 200 R 50 50 0 0 P
+X 1Q 2 0 -100 200 R 50 50 0 0 P
+X 1D 3 0 -200 200 R 50 50 0 0 P
+X 2D 4 0 -300 200 R 50 50 0 0 P
+X 2Q 5 0 -400 200 R 50 50 0 0 P
+X 3Q_1 6 0 -500 200 R 50 50 0 0 P
+X 3D_1 7 0 -600 200 R 50 50 0 0 P
+X 3Q_2 8 0 -700 200 R 50 50 0 0 P
+X 3D_2 9 0 -800 200 R 50 50 0 0 P
+X GND 10 0 -900 200 R 50 50 0 0 P
+X VCC 20 1100 0 200 L 50 50 0 0 P
+X 8Q 19 1100 -100 200 L 50 50 0 0 P
+X 8D 18 1100 -200 200 L 50 50 0 0 P
+X 7D 17 1100 -300 200 L 50 50 0 0 P
+X 7Q 16 1100 -400 200 L 50 50 0 0 P
+X 6Q 15 1100 -500 200 L 50 50 0 0 P
+X 6D 14 1100 -600 200 L 50 50 0 0 P
+X 5D 13 1100 -700 200 L 50 50 0 0 P
+X 5Q 12 1100 -800 200 L 50 50 0 0 P
+X CLK 11 1100 -900 200 L 50 50 0 0 P
+P 5 0 1 6 200 100 900 100 900 -1000 200 -1000 200 100 N
+ENDDRAW
+ENDDEF
+#
+#End Library
