@@ -4,8 +4,8 @@
 
 // debug enabler (to enable/disable before compiling)
 #define LOGGING 1
-#define SERIAL_TASK_EN 0
-#define GENERATE_TASK_EN 0
+#define SERIAL_TASK_EN 1
+#define GENERATE_TASK_EN 1
 #define FLASH_TASK_EN 0
 
 // the higher the number the higher the priority it is
@@ -33,18 +33,35 @@ extern TaskHandle_t generate_handle;
 extern TaskHandle_t serial_handle;
 extern TaskHandle_t flash_handle;
 
-typedef struct CoordLayerBuff {             // coordBufs[0]: {[[x1,y1], [x2,y2], ...], mutex}
+/*typedef struct CoordLayerBuff {             // coordBufs[0]: {[[x1,y1], [x2,y2], ...], mutex}
   uint8_t buff[COORD_BUF_SIZE][2];          // coordBufs[1]: {[[x1,y1], [x2,y2], ...], mutex}
   SemaphoreHandle_t mutex;
-} CoordLayerBuff;
+} CoordLayerBuff;*/
+
+typedef struct {
+    int x;
+    int y;
+} point_t;
+
+
+typedef struct {
+    point_t points[MAX_POINTS_PER_LAYER]; //The CoordBuff struct contains an array of point_t
+    uint8_t point_count; //to keep track of the number of points in the buffer, *we can remove*
+    SemaphoreHandle_t mutex;
+} CoordBuff;
+
+
 
 typedef struct BitLayerBuff {               // bitBufs[0]: [bitrow1, bitrow2...], mutex
   uint8_t buff[ROW_SIZE];                 // bitBufs[1]: [bitrow1, bitrow2...], mutex
   SemaphoreHandle_t mutex;
 } BitLayerBuff;
 
-extern static CoordLayerBuff coordBufs[LAYER_SIZE]; // coordBufs = [{[[x1,y1], [x2,y2], ...], mutex}, {[[x1,y1], [x2,y2], ...], mutex}, ...]
-extern static BitLayerBuff bitBufs[LAYER_SIZE];            
+extern CoordBuff coordBufs[LAYER_SIZE]; // coordBufs = [{[[x1,y1], [x2,y2], ...], mutex}, {[[x1,y1], [x2,y2], ...], mutex}, ...]
+extern BitLayerBuff bitBufs[LAYER_SIZE];            
+
+// extern: variable is defined in another translation unit
+// static: variable is only visible within the translation unit where it is defined --> conflict
 
 // functions
 void generate_task(void *pvParameters);
