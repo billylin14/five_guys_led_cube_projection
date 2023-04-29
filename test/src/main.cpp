@@ -21,14 +21,23 @@ void serial_task(void *pvParameters) {
   const TickType_t xDelay = 1;  // 1 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
+  //const uint8_t numChars = strlen("173824481236384712536823764837285176");
+  //char serialBuffer[numChars + 1];   // an array to store the received data
+
+
+  const char *numString = "173824481236384712536823764837285176";
+  char serialBuffer[strlen(numString) + 1];   // Add 1 for the null terminator
+
+  strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
+
 #if TEST
-  const int numChars = 91; // 'xyz'*512
-  char serialBuffer[numChars];   // an array to store the received data
-  char input[] = "173824481236384712536823764837285176143647326754831257248176832641285782473265814386427187";
-  strcpy(serialBuffer, input);
-  bool readyToProcess = true;
+  //const int numChars = 213; // 'xyz'*512
+  //char serialBuffer[numChars];   // an array to store the received data
+  //char input[] = "173824481236384712536823764837285176143647326754831257248176832641285782473265814386427187";
+  //strcpy(serialBuffer, input);
+  //bool readyToProcess = true;
   #endif
-  
+  bool readyToProcess = false;
 #if LABVIEW  
   //Initializers for serial read
   uint8_t ndx = 0;
@@ -44,21 +53,29 @@ void serial_task(void *pvParameters) {
       // read from serial buffer, convert one coord string to int x, y, z at a time
       // store the int x, y, z in a temperary buffer
       // move this x,y,z into the coordBufs
-
+      #if !LABVIEW
+        if (!readyToProcess) {
+          process_serial_string(serialBuffer, layer_points, points_count);
+          readyToProcess = true;
+        }
+      #endif
       if (readyToProcess) { //priortize processing? this will be blocked if no mutex is available tho and might overflow the buffer 
         // DO PREPROCESSING TO FILL COORDINATE BUFFERS
-        process_serial_string(serialBuffer, layer_points, points_count);
-        xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); 
+        
+        //xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); 
         // // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
         // // 2.3. Return the mutex
-        xSemaphoreGive(coordBufs[currLayer].mutex);
+        //xSemaphoreGive(coordBufs[currLayer].mutex);
+        
+        Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
 
-        if (currLayer >= LAYER_SIZE-1) {
+        if (currLayer >= LAYER_SIZE - 1) {
           currLayer = 0;
           readyToProcess = false;
         } else {
           currLayer++;
         }
+        
       }
       #if LABVIEW
       else if (Serial.available()){ // non-blocking
@@ -70,6 +87,7 @@ void serial_task(void *pvParameters) {
               ndx = 0;
           }
         } else { 
+          process_serial_string(serialBuffer, layer_points, points_count);
           readyToProcess = true;
           ndx = 0;
         }
@@ -176,3 +194,6 @@ void setup() {
 void loop() {
   
 }
+
+
+
