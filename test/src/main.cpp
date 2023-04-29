@@ -46,7 +46,8 @@ void serial_task(void *pvParameters) {
   #endif
 
   while (1) {
-    #if LOGGING 
+
+    #if LOGGING
       Serial.println("Enters serial task");
     #endif
     #if SERIAL_TASK_EN
@@ -101,6 +102,8 @@ void serial_task(void *pvParameters) {
 void generate_task(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(100);
   uint8_t currLayer = 0;
+  bitset_t tempBuffer[ROWS]; // Temporary storage for buffer
+
   while (1) {
     #if LOGGING 
       Serial.println("Enters generate task");
@@ -120,11 +123,14 @@ void generate_task(void *pvParameters) {
       } else {
         currLayer++;
       }
+
+
     #endif
     vTaskDelay(xDelay); // Delay 100 milliseconds
     // note that vTaskDelay is non-blocking (enable context switching), but the arduino delay() is blocking (i.e. the CPU will be stuck here)
   }
 }
+
 
 void flash_task(void *pvParameters) {
   // to run at a certain frequency
