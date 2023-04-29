@@ -1,45 +1,40 @@
 #include <Arduino.h>
+#include "main.h"
+#include "common_point.h"
 
-#define LOGGING 1
-#define SERIAL_TASK_EN 1
-#define GENERATE_TASK_EN 1
-#define FLASH_TASK_EN 1
-
-#define LAYER_SIZE 8
-#define ROW_SIZE 8
-#define COORD_BUF_SIZE ROW_SIZE*ROW_SIZE
 
 // Define task handles
 TaskHandle_t generate_handle;
 TaskHandle_t serial_handle;
 TaskHandle_t flash_handle;
 
-
-typedef struct CoordLayerBuff {             // coordBufs[0]: {[[x1,y1], [x2,y2], ...], mutex}
-  uint8_t buff[COORD_BUF_SIZE][2];          // coordBufs[1]: {[[x1,y1], [x2,y2], ...], mutex}
-  SemaphoreHandle_t mutex;
-} CoordLayerBuff;
-
-static CoordLayerBuff test_struct;
-
-typedef struct BitLayerBuff {               // bitBufs[0]: [bitrow1, bitrow2...], mutex
-  uint8_t buff[ROW_SIZE];                 // bitBufs[1]: [bitrow1, bitrow2...], mutex
-  SemaphoreHandle_t mutex;
-} BitLayerBuff;
-
-static CoordLayerBuff coordBufs[LAYER_SIZE]; // coordBufs = [{[[x1,y1], [x2,y2], ...], mutex}, {[[x1,y1], [x2,y2], ...], mutex}, ...]
+//Initialize common buffers
+static CoordBuff coordBufs[LAYER_SIZE]; // coordBufs = [{[[x1,y1], [x2,y2], ...], mutex}, {[[x1,y1], [x2,y2], ...], mutex}, ...]
 static BitLayerBuff bitBufs[LAYER_SIZE];     
+
+//Initialize arrays for Serial Function
+point_t layer_points[LAYER_SIZE][COORD_BUFF_SIZE];
+int points_count[LAYER_SIZE];
+
 
 void serial_task(void *pvParameters) {
   const TickType_t xDelay = 1;  // 1 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
-  const int numChars = 1536; // 'xyz'*512
+#if TEST
+  const int numChars = 91; // 'xyz'*512
   char serialBuffer[numChars];   // an array to store the received data
+  char input[] = "173824481236384712536823764837285176143647326754831257248176832641285782473265814386427187";
+  strcpy(serialBuffer, input);
+  bool readyToProcess = true;
+  #endif
   
+#if LABVIEW  
+  //Initializers for serial read
   uint8_t ndx = 0;
   char endMarker = '\n';
   bool readyToProcess = false;
+  #endif
 
   while (1) {
     #if LOGGING 
@@ -52,12 +47,12 @@ void serial_task(void *pvParameters) {
 
       if (readyToProcess) { //priortize processing? this will be blocked if no mutex is available tho and might overflow the buffer 
         // DO PREPROCESSING TO FILL COORDINATE BUFFERS
-        // 1. Convert strings to ints
-        // 2.1. Take the mutex (blocked if busy, change max delay to skip?)
-        // xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); 
+        process_serial_string(serialBuffer, layer_points, points_count);
+        xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); 
         // // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
         // // 2.3. Return the mutex
-        // xSemaphoreGive(coordBufs[currLayer].mutex);
+        xSemaphoreGive(coordBufs[currLayer].mutex);
+
         if (currLayer >= LAYER_SIZE-1) {
           currLayer = 0;
           readyToProcess = false;
@@ -65,21 +60,23 @@ void serial_task(void *pvParameters) {
           currLayer++;
         }
       }
-      // } else if (Serial.available()){ // non-blocking
-      //   char ch = Serial.read();
-      //   if (ch != endMarker) {
-      //     serialBuffer[ndx] = ch;
-      //     ndx++;
-      //     if (ndx >= numChars) { // ring buffer loop-around mechanism
-      //         ndx = 0;
-      //     }
-      //   } else { 
-      //     readyToProcess = true;
-      //     ndx = 0;
-      //   }
-      // }
+      #if LABVIEW
+      else if (Serial.available()){ // non-blocking
+        char ch = Serial.read();
+        if (ch != endMarker) {
+          serialBuffer[ndx] = ch;
+          ndx++;
+          if (ndx >= numChars) { // ring buffer loop-around mechanism
+              ndx = 0;
+          }
+        } else { 
+          readyToProcess = true;
+          ndx = 0;
+        }
+      }
+      #endif
     #endif
-    vTaskDelay(xDelay); // Delay 1 cycle
+  vTaskDelay(xDelay); // Delay 1 cycle
   }
 }
 
