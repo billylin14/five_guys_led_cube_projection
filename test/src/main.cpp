@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "main.h"
 #include "common_point.h"
+#include "stdio.h"
 
 
 // Define task handles
@@ -23,30 +24,22 @@ void serial_task(void *pvParameters) {
 
   //const uint8_t numChars = strlen("173824481236384712536823764837285176");
   //char serialBuffer[numChars + 1];   // an array to store the received data
-
-
-  const char *numString = "173824481236384712536823764837285176";
-  char serialBuffer[strlen(numString) + 1];   // Add 1 for the null terminator
-
-  strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
-
-#if TEST
-  //const int numChars = 213; // 'xyz'*512
-  //char serialBuffer[numChars];   // an array to store the received data
-  //char input[] = "173824481236384712536823764837285176143647326754831257248176832641285782473265814386427187";
-  //strcpy(serialBuffer, input);
-  //bool readyToProcess = true;
+  #if !LABVIEW
+    const char *numString = "173824481236384712536823764837285176";
+    char serialBuffer[strlen(numString) + 1];   // Add 1 for the null terminator
+    strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
+  #else
+    //Initializers for serial read
+    uint8_t numChars = 512;
+    char serialBuffer[numChars+1];
+    uint8_t ndx = 0;
+    char endMarker = '\n';
+    FILE *fptr;  // to write to the file
   #endif
+  
   bool readyToProcess = false;
-#if LABVIEW  
-  //Initializers for serial read
-  uint8_t ndx = 0;
-  char endMarker = '\n';
-  bool readyToProcess = false;
-  #endif
 
   while (1) {
-
     #if LOGGING
       Serial.println("Enters serial task");
     #endif
@@ -79,20 +72,20 @@ void serial_task(void *pvParameters) {
         
       }
       #if LABVIEW
-      else if (Serial.available()){ // non-blocking
-        char ch = Serial.read();
-        if (ch != endMarker) {
-          serialBuffer[ndx] = ch;
-          ndx++;
-          if (ndx >= numChars) { // ring buffer loop-around mechanism
-              ndx = 0;
+        else if (Serial.available()){ // non-blocking
+          char ch = Serial.read();
+          if (ch != endMarker) {
+            serialBuffer[ndx] = ch;
+            ndx++;
+            if (ndx >= numChars) { // ring buffer loop-around mechanism
+                ndx = 0;
+            }
+          } else { 
+            process_serial_string(serialBuffer, layer_points, points_count);
+            readyToProcess = true;
+            ndx = 0;
           }
-        } else { 
-          process_serial_string(serialBuffer, layer_points, points_count);
-          readyToProcess = true;
-          ndx = 0;
         }
-      }
       #endif
     #endif
   vTaskDelay(xDelay); // Delay 1 cycle
@@ -102,7 +95,7 @@ void serial_task(void *pvParameters) {
 void generate_task(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(100);
   uint8_t currLayer = 0;
-  bitset_t tempBuffer[ROWS]; // Temporary storage for buffer
+  bitset_t tempBuffer[ROW_SIZE]; // Temporary storage for buffer
 
   while (1) {
     #if LOGGING 
