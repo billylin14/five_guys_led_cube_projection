@@ -61,7 +61,7 @@ void serial_task(void *pvParameters) {
         // // 2.3. Return the mutex
         //xSemaphoreGive(coordBufs[currLayer].mutex);
         
-        Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
+        // Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
 
         if (currLayer >= LAYER_SIZE - 1) {
           currLayer = 0;
@@ -73,6 +73,7 @@ void serial_task(void *pvParameters) {
       }
       #if LABVIEW
         else if (Serial.available()){ // non-blocking
+          Serial.println("Billy is dumb");
           char ch = Serial.read();
           if (ch != endMarker) {
             serialBuffer[ndx] = ch;
@@ -81,6 +82,9 @@ void serial_task(void *pvParameters) {
                 ndx = 0;
             }
           } else { 
+            Serial.println("Billy is smart");
+            serialBuffer[ndx] = '\0';
+            Serial.println(serialBuffer);
             process_serial_string(serialBuffer, layer_points, points_count);
             readyToProcess = true;
             ndx = 0;
