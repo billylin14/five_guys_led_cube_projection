@@ -163,9 +163,8 @@ void generate_task(void *pvParameters) {
 
 void flash_task(void *pvParameters) {
   // to run at a certain frequency
-  const TickType_t xFrequency = 10;
+  const TickType_t xFrequency = 16 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime;
-  BaseType_t xWasDelayed;
   xLastWakeTime = xTaskGetTickCount();  // get initial time t0
 
   uint8_t currLayer = 0;
@@ -175,24 +174,47 @@ void flash_task(void *pvParameters) {
       #if LOGGING 
         Serial.println("Enters flash task");
       #endif
-      // Wait for the clock to tick
-      xWasDelayed = xTaskDelayUntil( &xLastWakeTime, xFrequency );
       // Takes the mutex
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
-      // copy the data to local to avoid blocking the access for generate to use bitBufs?
+      //upload a layer of bits to shift register
+      layer_write(&bitBufs[currLayer]);
       xSemaphoreGive(bitBufs[currLayer].mutex);
       // Returns the mutex
-      if (currLayer >= LAYER_SIZE-1) {
+      //Tell 8 bit shift register to light new layer ********** //
+      digitalWrite(layer_clk,0);                                //
+      //check if flag is past 8 layers--> reset layer count     //
+      if(currLayer == 0) {                                     //
+        digitalWrite(Layer, 1);                                 //
+      } else {                                                  //
+        digitalWrite(Layer, 0);                                 //
+      }                                                         //
+      digitalWrite(layer_clk, 1);                               //
+      //********************************************************//
+      //update layer flag for upcoming layer
+      currLayer++;
+      //reset counter once it reaches final layer
+      if(currLayer >= LAYER_SIZE){
         currLayer = 0;
-      } else {
-        currLayer++;
       }
     #endif
+  vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
 void setup() {
-  Serial.begin(9600); 
+  Serial.begin(9600);
+  //set pinModes
+  pinMode(Layer, OUTPUT);
+  pinMode(Row1, OUTPUT);
+  pinMode(Row2, OUTPUT);
+  pinMode(Row3, OUTPUT);
+  pinMode(Row4, OUTPUT);
+  pinMode(Row5, OUTPUT);
+  pinMode(Row6, OUTPUT);
+  pinMode(Row7, OUTPUT);
+  pinMode(Row8, OUTPUT);
+  pinMode(row_clk, OUTPUT);
+  pinMode(layer_clk, OUTPUT); 
   // Initializes mutexes (buffer values automatically set to zero when declared as static variables)
   for (int i = 0; i < LAYER_SIZE; i++) {
     coordBufs[i].mutex = xSemaphoreCreateMutex();

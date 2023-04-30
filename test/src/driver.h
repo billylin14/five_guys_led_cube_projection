@@ -25,6 +25,6 @@
 
 //functions
 void readlight_layer(void *pvParameters);
-void layer_write(BitLayerBuff bitBufs);
+void layer_write(BitLayerBuff *bitBufs);
 
 #endif
