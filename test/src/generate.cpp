@@ -3,9 +3,9 @@
 #include "generate.h"
 
 
-void set_bit(bitset_t *bitset, int pos) {
-    *bitset |= (1ull << pos);
-}
+// void set_bit(bitset_t *bitset, int pos) {
+//     *bitset |= (1ull << pos);
+// }
 
 void clear_bit(bitset_t *bitset, int pos) {
     *bitset &= ~(1ull << pos);
@@ -24,6 +24,6 @@ void fill_temp_buffer_with_coords(bitset_t tempBuffer[ROW_SIZE], CoordBuff *coor
     for (int i = 0; i < coordBuff->point_count; i++) {
         int x = coordBuff->points[i].x;
         int y = coordBuff->points[i].y;
-        set_bit(&tempBuffer[x], y);
+        SetBitOn(tempBuffer[y], x);
     }
 }

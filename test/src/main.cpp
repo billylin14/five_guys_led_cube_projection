@@ -19,13 +19,14 @@ int points_count[LAYER_SIZE];
 
 
 void serial_task(void *pvParameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(100);  // 1 clock cycle (placeholder)
+  const TickType_t xDelay = pdMS_TO_TICKS(100);  // 100 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
   //const uint8_t numChars = strlen("173824481236384712536823764837285176");
   //char serialBuffer[numChars + 1];   // an array to store the received data
   #if !LABVIEW
     const char *numString = "173824481236384712536823764837285176";
+    // 173* 824* 481* 236* 384* 712* 536* 823* 764* 837* 285* 176* // Process_to_serial works
     char serialBuffer[strlen(numString) + 1];   // Add 1 for the null terminator
     strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
   #else
@@ -41,7 +42,7 @@ void serial_task(void *pvParameters) {
 
   while (1) {
     #if LOGGING
-      //Serial.println("Enters serial task");
+      Serial.println("Enters serial task");
     #endif
     #if SERIAL_TASK_EN
       // read from serial buffer, convert one coord string to int x, y, z at a time
@@ -83,10 +84,8 @@ void serial_task(void *pvParameters) {
         //   Serial.printf("From Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
         // }
         // for (int i = 0; i < points_count[currLayer]; i++) {
-        //   Serial.printf("From CoordBuffs(%d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y);
+        //   Serial.printf("From CoordBuffs(%d, %d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y, currLayer);
         // }
-
-
         if (currLayer >= LAYER_SIZE - 1) {
           currLayer = 0;
           readyToProcess = false;
@@ -112,7 +111,7 @@ void serial_task(void *pvParameters) {
         }
       #endif
     #endif
-  vTaskDelay(xDelay); // Delay 1 cycle
+  vTaskDelay(xDelay); // Delay 100 cycle
   }
 }
 
@@ -123,7 +122,7 @@ void generate_task(void *pvParameters) {
 
   while (1) {
     #if LOGGING 
-      //Serial.println("Enters generate task");
+      Serial.println("Enters generate task");
     #endif
     #if GENERATE_TASK_EN
       // Take mutexes (blocked if any is unavailable)
@@ -131,18 +130,22 @@ void generate_task(void *pvParameters) {
       // // Convert coordinates to bitmaps (generate.c)
       fill_temp_buffer_with_coords(tempBuffer, &coordBufs[currLayer]); //check if & works
       xSemaphoreGive(coordBufs[currLayer].mutex);
+      //print current buffer layer
+      // Serial.printf("Generate function ran %d layer \n", currLayer);
       // moves temp buffer to bitBufs for flashing data
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
       for (int i = 0; i < ROW_SIZE; i++) {
           bitBufs[currLayer].buff[i] = tempBuffer[i];
-          for (int j=0; j < COL_SIZE; j++){
-            Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
-          }
-          Serial.printf("\n");
       }
-        Serial.printf("\n");
+      //     for (int j=0; j < COL_SIZE; j++){
+      //       Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
+      //     }
+      //     Serial.printf("\n");
+      // }
+      // Serial.printf("\n");
+
       xSemaphoreGive(bitBufs[currLayer].mutex);
-      Serial.printf("Generate function ran %d layer \n", currLayer);
+
       //update layer for every loop
       if (currLayer >= LAYER_SIZE-1) {
         currLayer = 0;
@@ -170,7 +173,7 @@ void flash_task(void *pvParameters) {
 
     #if FLASH_TASK_EN 
       #if LOGGING 
-        //Serial.println("Enters flash task");
+        Serial.println("Enters flash task");
       #endif
       // Wait for the clock to tick
       xWasDelayed = xTaskDelayUntil( &xLastWakeTime, xFrequency );
@@ -201,7 +204,7 @@ void setup() {
                     "generate",        /* name of task. */
                     10000,        /* Stack size of task */
                     NULL,              /* parameter of the task */
-                    2, /* priority of the task */
+                    1, /* priority of the task */
                     &generate_handle,  /* Task handle to keep track of created task */
                     1);                /* pin task to core 0 */                  
   xTaskCreatePinnedToCore(
@@ -209,7 +212,7 @@ void setup() {
                     "serial",         /* name of task. */
                     10000,       /* Stack size of task */
                     NULL,             /* parameter of the task */
-                    1,  /* priority of the task */
+                    2,  /* priority of the task */
                     &serial_handle,   /* Task handle to keep track of created task */
                     1);               /* pin task to core 0 */                  
   xTaskCreatePinnedToCore(

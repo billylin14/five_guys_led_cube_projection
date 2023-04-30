@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include "common_point.h"
 
-void set_bit(bitset_t *bitset, int pos);
+//void set_bit(bitset_t *bitset, int pos);
+#define SetBitOn(var, bit) (var |= (1 << bit))
 
 void clear_bit(bitset_t *bitset, int pos);
 
