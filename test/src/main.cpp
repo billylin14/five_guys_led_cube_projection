@@ -56,12 +56,38 @@ void serial_task(void *pvParameters) {
       if (readyToProcess) { //priortize processing? this will be blocked if no mutex is available tho and might overflow the buffer 
         // DO PREPROCESSING TO FILL COORDINATE BUFFERS
         
-        //xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); 
-        // // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
-        // // 2.3. Return the mutex
-        //xSemaphoreGive(coordBufs[currLayer].mutex);
-        
+        // set MSB to 1
+        // 2.1. Take the mutex (blocked if busy, change max delay to skip?)
+        xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY);
+
+        Serial.printf("Current Layer: %d\n", currLayer);  
         Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
+
+
+        // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
+        for (int i = 0; i < points_count[currLayer]; i++) { //The number of points in the current layer is given here
+          coordBufs[currLayer].points[i].x = layer_points[currLayer][i].x;
+          /*This line assigns the x-coordinate value of the i-th point in the layer_points array for the current layer 
+          to the x-coordinate value of the i-th point in the coordBufs array for the same layer*/
+          coordBufs[currLayer].points[i].y = layer_points[currLayer][i].y;
+        }
+          coordBufs[currLayer].point_count = points_count[currLayer]; //store point_count locally
+
+          /*assigns the total number of points in the current layer 
+          to the point_count "field (the struct)" of the CoordBuff struct for the same layer.*/
+
+        // 2.3. Return the mutex
+        xSemaphoreGive(coordBufs[currLayer].mutex);
+
+
+        for (int i = 0; i < points_count[currLayer]; i++) {
+          Serial.printf("From Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
+        }
+
+        for (int i = 0; i < points_count[currLayer]; i++) {
+          Serial.printf("From CoordBuffs(%d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y);
+        }
+
 
         if (currLayer >= LAYER_SIZE - 1) {
           currLayer = 0;
