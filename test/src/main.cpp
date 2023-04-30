@@ -19,7 +19,7 @@ int points_count[LAYER_SIZE];
 
 
 void serial_task(void *pvParameters) {
-  const TickType_t xDelay = 1;  // 1 clock cycle (placeholder)
+  const TickType_t xDelay = pdMS_TO_TICKS(100);  // 1 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
   //const uint8_t numChars = strlen("173824481236384712536823764837285176");
@@ -41,7 +41,7 @@ void serial_task(void *pvParameters) {
 
   while (1) {
     #if LOGGING
-      Serial.println("Enters serial task");
+      //Serial.println("Enters serial task");
     #endif
     #if SERIAL_TASK_EN
       // read from serial buffer, convert one coord string to int x, y, z at a time
@@ -117,13 +117,13 @@ void serial_task(void *pvParameters) {
 }
 
 void generate_task(void *pvParameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(100);
+  const TickType_t xDelay = pdMS_TO_TICKS(50); //1/2 the delay time of serial
   uint8_t currLayer = 0;
   bitset_t tempBuffer[ROW_SIZE]; // Temporary storage for buffer
 
   while (1) {
     #if LOGGING 
-      Serial.println("Enters generate task");
+      //Serial.println("Enters generate task");
     #endif
     #if GENERATE_TASK_EN
       // Take mutexes (blocked if any is unavailable)
@@ -136,12 +136,13 @@ void generate_task(void *pvParameters) {
       for (int i = 0; i < ROW_SIZE; i++) {
           bitBufs[currLayer].buff[i] = tempBuffer[i];
           for (int j=0; j < COL_SIZE; j++){
-            Serial.printf("%d", is_bit_set(&bitBufs[currLayer].buff[i],j));
+            Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
           }
           Serial.printf("\n");
-        }
+      }
         Serial.printf("\n");
       xSemaphoreGive(bitBufs[currLayer].mutex);
+      Serial.printf("Generate function ran %d layer \n", currLayer);
       //update layer for every loop
       if (currLayer >= LAYER_SIZE-1) {
         currLayer = 0;
@@ -169,7 +170,7 @@ void flash_task(void *pvParameters) {
 
     #if FLASH_TASK_EN 
       #if LOGGING 
-        Serial.println("Enters flash task");
+        //Serial.println("Enters flash task");
       #endif
       // Wait for the clock to tick
       xWasDelayed = xTaskDelayUntil( &xLastWakeTime, xFrequency );
@@ -200,7 +201,7 @@ void setup() {
                     "generate",        /* name of task. */
                     10000,        /* Stack size of task */
                     NULL,              /* parameter of the task */
-                    1, /* priority of the task */
+                    2, /* priority of the task */
                     &generate_handle,  /* Task handle to keep track of created task */
                     1);                /* pin task to core 0 */                  
   xTaskCreatePinnedToCore(
@@ -208,17 +209,18 @@ void setup() {
                     "serial",         /* name of task. */
                     10000,       /* Stack size of task */
                     NULL,             /* parameter of the task */
-                    2,  /* priority of the task */
+                    1,  /* priority of the task */
                     &serial_handle,   /* Task handle to keep track of created task */
-                    0);               /* pin task to core 0 */                  
+                    1);               /* pin task to core 0 */                  
   xTaskCreatePinnedToCore(
                     flash_task,      /* Task function. */
                     "flash",         /* name of task. */
                     10000,      /* Stack size of task */
                     NULL,            /* parameter of the task */
-                    2,  /* priority of the task */
+                    1,  /* priority of the task */
                     &flash_handle,   /* Task handle to keep track of created task */
-                    1);              /* pin task to core 1 */   
+                    0);              /* pin task to core 1 */
+                    //Change to run every __ms   
 
 }
 

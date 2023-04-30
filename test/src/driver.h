@@ -20,6 +20,7 @@
 //define macros for setting and getting bit
 #define GetBit(var, bit) ((var & (1 << bit)) != 0) //Get bit in byte function
 
+
 #define TEST 0
 
 //functions
