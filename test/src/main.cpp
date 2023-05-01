@@ -23,8 +23,6 @@ void serial_task(void *pvParameters) {
   const TickType_t xDelay = pdMS_TO_TICKS(100);  // 100 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
-  //const uint8_t numChars = strlen("173824481236384712536823764837285176");
-  //char serialBuffer[numChars + 1];   // an array to store the received data
   #if !LABVIEW
     const char *numString = "173824481236384712536823764837285176";
     // 173* 824* 481* 236* 384* 712* 536* 823* 764* 837* 285* 176* // Process_to_serial works
@@ -35,15 +33,15 @@ void serial_task(void *pvParameters) {
     unsigned int numChars = 512;
     char serialBuffer[numChars+1];
     unsigned int ndx = 0;
-    char endMarker = '>';
+    char endMarker = '\n';
   #endif
   
   bool readyToProcess = false;
 
   while (1) {
     #if LOGGING
-      //Serial.println("Enters serial task");
-      //Serial.printf("\n");
+      Serial.println("Enters serial task");
+      Serial.printf("\n");
     #endif
     #if SERIAL_TASK_EN
       // read from serial buffer, convert one coord string to int x, y, z at a time
@@ -62,10 +60,10 @@ void serial_task(void *pvParameters) {
         // 2.1. Take the mutex (blocked if busy, change max delay to skip?)
         xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY);
 
-        //Serial.printf("Current Layer: %d\n", currLayer);  
-        //Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
-
-
+        #if LOGGING
+          Serial.printf("Current Layer: %d\n", currLayer);  
+          Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
+        #endif
         // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
         for (int i = 0; i < points_count[currLayer]; i++) { //The number of points in the current layer is given here
           coordBufs[currLayer].points[i].x = layer_points[currLayer][i].x;
@@ -73,55 +71,71 @@ void serial_task(void *pvParameters) {
           to the x-coordinate value of the i-th point in the coordBufs array for the same layer*/
           coordBufs[currLayer].points[i].y = layer_points[currLayer][i].y;
         }
-          coordBufs[currLayer].point_count = points_count[currLayer]; //store point_count locally
+        coordBufs[currLayer].point_count = points_count[currLayer]; //store point_count locally
 
-          /*assigns the total number of points in the current layer 
-          to the point_count "field (the struct)" of the CoordBuff struct for the same layer.*/
+        /*assigns the total number of points in the current layer 
+        to the point_count "field (the struct)" of the CoordBuff struct for the same layer.*/
 
-        // 2.3. Return the mutex
         xSemaphoreGive(coordBufs[currLayer].mutex);
-        //Print layer points and coordbuffs
-        for (int i = 0; i < points_count[currLayer]; i++) {
-          //Serial.printf("Current Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
-        }
-        Serial.printf("\n");
-        for (int i = 0; i < points_count[currLayer]; i++) {
-          //Serial.printf("From CoordBuffs(%d, %d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y, currLayer);
-        }
-        //Serial.printf("\n");
-        //Serial.printf("\n");
+
+        #if LOGGING
+          // Print layer points and coordbuffs
+          for (int i = 0; i < points_count[currLayer]; i++) {
+            Serial.printf("Current Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
+          }
+          Serial.printf("\n");
+          for (int i = 0; i < points_count[currLayer]; i++) {
+            Serial.printf("From CoordBuffs(%d, %d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y, currLayer);
+          }
+          Serial.printf("\n");
+          Serial.printf("\n");
+        #endif
+        
         if (currLayer >= LAYER_SIZE - 1) {
-          //Print Statements
           currLayer = 0;
-          //Serial.printf("Current Layer: %d\n", currLayer);  
-          //Serial.printf("\n");
+          #if LOGGING
+            Serial.printf("Current Layer: %d\n", currLayer);  
+            Serial.printf("\n");
+          #endif
           readyToProcess = false;
         } else {
           currLayer++;
-          //Serial.printf("Current Layer: %d\n", currLayer); 
-          //Serial.printf("\n");
+          #if LOGGING
+            Serial.printf("Current Layer: %d\n", currLayer); 
+            Serial.printf("\n");
+          #endif
         }
         
       }
       #if LABVIEW
           while (Serial.available() > 0) { // non-blocking
             char ch = Serial.read();
+<<<<<<< Updated upstream
             Serial.print("Received: ");
             Serial.println(ch);
+=======
+            #if LABVIEW
+              Serial.print(ch);
+            #endif
+>>>>>>> Stashed changes
             if (ch != endMarker) {
               serialBuffer[ndx] = ch;
               ndx++;
               if (ndx >= numChars) { // ring buffer loop-around mechanism
                 ndx = 0;
               }
+<<<<<<< Updated upstream
               Serial.print("Buffer index: ");
               Serial.println(ndx);
               Serial.print("Buffer content: ");
               Serial.println(serialBuffer);
             } else {
               // Serial.println("Billy is smart");
+=======
+            } else {
+>>>>>>> Stashed changes
               serialBuffer[ndx] = '\0';
-              // Serial.println(serialBuffer);
+              // Serial.print(serialBuffer);
               process_serial_string(serialBuffer, layer_points, points_count);
               // readyToProcess = true;
               ndx = 0;
@@ -140,7 +154,7 @@ void generate_task(void *pvParameters) {
 
   while (1) {
     #if LOGGING 
-      //Serial.println("Enters generate task");
+      Serial.println("Enters generate task");
     #endif
     #if GENERATE_TASK_EN
       // Take mutexes (blocked if any is unavailable)
@@ -155,26 +169,31 @@ void generate_task(void *pvParameters) {
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
       for (int i = 0; i < ROW_SIZE; i++) {
           bitBufs[currLayer].buff[i] = tempBuffer[i];
-          for (int j=0; j < COL_SIZE; j++){
-            //Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
-          }
-          //Serial.printf("\n");
+          #if LOGGING
+            for (int j=0; j < COL_SIZE; j++){
+              Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
+            }
+          Serial.printf("\n");
+          Serial.printf("\n");
+          #endif
       }
-      //Serial.printf("\n");
 
       xSemaphoreGive(bitBufs[currLayer].mutex);
 
       //update layer for every loop
-      //Print Statements
       if (currLayer >= LAYER_SIZE-1) {
         currLayer = 0;
-        //Serial.printf("Current Layer is: %d", currLayer);
-        //Serial.printf("\n");
+        #if LOGGING
+          Serial.printf("Current Layer is: %d", currLayer);
+          Serial.printf("\n");
+        #endif
 
       } else {
         currLayer++;
-        //Serial.printf("Current Layer is: %d", currLayer);
-        //Serial.printf("\n");
+        #if LOGGING
+          Serial.printf("Current Layer is: %d", currLayer);
+          Serial.printf("\n");
+        #endif
       }
 
 
@@ -197,19 +216,23 @@ void flash_task(void *pvParameters) {
 
     #if FLASH_TASK_EN 
       #if LOGGING 
-        //Serial.println("Enters flash task");
+        Serial.println("Enters flash task");
+        Serial.printf("Current Layer is: %d", currLayer);
+        Serial.printf("\n");
       #endif
 
-      Serial.printf("Current Layer is: %d", currLayer);
-      Serial.printf("\n");
       // Takes the mutex
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
       //upload a layer of bits to shift register
-      Serial.printf("Printing Layer Write: \n\n");
+      #if LOGGING
+        Serial.printf("Printing Layer Write: \n\n");
+      #endif
       layer_write(&bitBufs[currLayer]);
       xSemaphoreGive(bitBufs[currLayer].mutex);
 
-      Serial.printf("\n");
+      #if LOGGING
+        Serial.printf("\n");
+      #endif
       // Returns the mutex
       //Tell 8 bit shift register to light new layer ********** //
       digitalWrite(layer_clk,0);                                //
