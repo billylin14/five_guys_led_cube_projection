@@ -1,15 +1,7 @@
 #include <Arduino.h>
 #include <driver.h>
 
-
-
-
 uint8_t row_flag;
-
-
-//timing
-long int t1;
-long int t2;
 
 #if TEST
 
@@ -49,6 +41,17 @@ void layer_write(BitLayerBuff *bitBufs) {
     digitalWrite(Row6, GetBit(bitBufs->buff[row_flag],5)); //flash [row_flag][3st column] bit
     digitalWrite(Row7, GetBit(bitBufs->buff[row_flag],6)); //flash [row_flag][3st column] bit
     digitalWrite(Row8, GetBit(bitBufs->buff[row_flag],7)); //flash [row_flag][3st column] bit
+
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],0));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],1));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],2));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],3));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],4));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],5));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],6));
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],7));
+
+    Serial.printf("\n");
 
     digitalWrite(row_clk, 1);
     }

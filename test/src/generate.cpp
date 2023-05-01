@@ -24,6 +24,6 @@ void fill_temp_buffer_with_coords(bitset_t tempBuffer[ROW_SIZE], CoordBuff *coor
     for (int i = 0; i < coordBuff->point_count; i++) {
         int x = coordBuff->points[i].x;
         int y = coordBuff->points[i].y;
-        SetBitOn(tempBuffer[y], x);
+        SetBitOn(tempBuffer[x], y);
     }
 }
