@@ -1,7 +1,7 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define LABVIEW 0
+#define LABVIEW 1
 #define LOGGING (1&&!LABVIEW)
 #define SERIAL_TASK_EN 1
 #define GENERATE_TASK_EN 1
