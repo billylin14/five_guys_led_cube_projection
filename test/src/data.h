@@ -1,11 +1,10 @@
-#ifndef COMMON_POINT_H
-#define COMMON_POINT_H
-#include <Arduino.h>
+#ifndef PROJECT_SETTING
+#define PROJECT_SETTING
+#include "project_setting.h"
+#endif
 
-#define ROW_SIZE 8
-#define COL_SIZE 8
-#define LAYER_SIZE 8
-#define COORD_BUFF_SIZE 64 // The maximum number of points per layer is 64
+#ifndef DATA_H
+#define DATA_H
 
 /* DATA TYPE DEFINITIONS*/
 typedef uint8_t bitset_t;
@@ -17,7 +16,7 @@ typedef struct {
 
 typedef struct CoordBuff{
     point_t points[COORD_BUFF_SIZE]; //The CoordBuff struct contains an array of point_t
-    uint8_t point_count; //to keep track of the number of points in the buffer, *we can remove*
+    uint8_t point_count;
     SemaphoreHandle_t mutex;
 } CoordBuff;
 
@@ -28,6 +27,8 @@ typedef struct BitLayerBuff {               // bitBufs[0]: [bitrow1, bitrow2...]
 } BitLayerBuff;
 
 
-/* END DATA TYPE DEFINITIONS*/
+/* VARIABLE DECLARATION */
+extern CoordBuff coordBufs[LAYER_SIZE]; // coordBufs = [{[[x1,y1], [x2,y2], ...], mutex}, {[[x1,y1], [x2,y2], ...], mutex}, ...]
+extern BitLayerBuff bitBufs[LAYER_SIZE];    
 
-#endif // COMMON_H
+#endif
