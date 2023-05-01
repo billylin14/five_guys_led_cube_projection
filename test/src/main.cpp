@@ -20,7 +20,7 @@ int points_count[LAYER_SIZE];
 
 
 void serial_task(void *pvParameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(100);  // 100 clock cycle (placeholder)
+  const TickType_t xDelay = pdMS_TO_TICKS(1);  // 100 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
   //const uint8_t numChars = strlen("173824481236384712536823764837285176");
@@ -103,38 +103,36 @@ void serial_task(void *pvParameters) {
         }
         
       }
+      
       #if LABVIEW
+        else {
           while (Serial.available() > 0) { // non-blocking
             char ch = Serial.read();
-            Serial.print("Received: ");
-            Serial.println(ch);
-            if (ch != endMarker) {
+            if (ch != endMarker) { //takes 9 times to see the end marker
               serialBuffer[ndx] = ch;
               ndx++;
-              if (ndx >= numChars) { // ring buffer loop-around mechanism
+              if (ndx > numChars) { // ring buffer loop-around mechanism
                 ndx = 0;
+                Serial.println("Buffer reached 213");
               }
-              Serial.print("Buffer index: ");
-              Serial.println(ndx);
-              Serial.print("Buffer content: ");
-              Serial.println(serialBuffer);
             } else {
               // Serial.println("Billy is smart");
               serialBuffer[ndx] = '\0';
-              // Serial.println(serialBuffer);
+              Serial.println(serialBuffer);
               process_serial_string(serialBuffer, layer_points, points_count);
-              // readyToProcess = true;
+              readyToProcess = true;
               ndx = 0;
             }
           }
-        #endif
+        }
+      #endif
     #endif
   vTaskDelay(xDelay); // Delay 100 cycle
   }
 }
 
 void generate_task(void *pvParameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(50); //1/2 the delay time of serial
+  const TickType_t xDelay = pdMS_TO_TICKS(1); //1/2 the delay time of serial
   uint8_t currLayer = 0;
   bitset_t tempBuffer[ROW_SIZE]; // Temporary storage for buffer
 
@@ -156,19 +154,11 @@ void generate_task(void *pvParameters) {
       for (int i = 0; i < ROW_SIZE; i++) {
           bitBufs[currLayer].buff[i] = tempBuffer[i];
           for (int j=0; j < COL_SIZE; j++){
-            //Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
           }
-          //Serial.printf("\n");
       }
-      //Serial.printf("\n");
-
       xSemaphoreGive(bitBufs[currLayer].mutex);
 
       //update layer for every loop
-<<<<<<< HEAD
-=======
-      //Print Statements
->>>>>>> origin/jun
       if (currLayer >= LAYER_SIZE-1) {
         currLayer = 0;
         //Serial.printf("Current Layer is: %d", currLayer);
@@ -208,7 +198,7 @@ void flash_task(void *pvParameters) {
       // Takes the mutex
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
       //upload a layer of bits to shift register
-      Serial.printf("Printing Layer Write: \n\n");
+      //Serial.printf("Printing Layer Write: \n\n");
       layer_write(&bitBufs[currLayer]);
       xSemaphoreGive(bitBufs[currLayer].mutex);
 
