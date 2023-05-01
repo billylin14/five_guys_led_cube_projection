@@ -28,6 +28,7 @@ void serial_task(void *pvParameters) {
   #if !LABVIEW
     const char *numString = "173824481236384712536823764837285176";
     // 173* 824* 481* 236* 384* 712* 536* 823* 764* 837* 285* 176* // Process_to_serial works
+    // 173* 824* 481* 236* 384* 712* 536* 823* 764* 837* 285* 176* // Process_to_serial works
     char serialBuffer[strlen(numString) + 1];   // Add 1 for the null terminator
     strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
   #else
@@ -81,15 +82,12 @@ void serial_task(void *pvParameters) {
         // 2.3. Return the mutex
         xSemaphoreGive(coordBufs[currLayer].mutex);
         //Print layer points and coordbuffs
-        for (int i = 0; i < points_count[currLayer]; i++) {
-          //Serial.printf("Current Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
-        }
-        Serial.printf("\n");
-        for (int i = 0; i < points_count[currLayer]; i++) {
-          //Serial.printf("From CoordBuffs(%d, %d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y, currLayer);
-        }
-        //Serial.printf("\n");
-        //Serial.printf("\n");
+        // for (int i = 0; i < points_count[currLayer]; i++) {
+        //   Serial.printf("From Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
+        // }
+        // for (int i = 0; i < points_count[currLayer]; i++) {
+        //   Serial.printf("From CoordBuffs(%d, %d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y, currLayer);
+        // }
         if (currLayer >= LAYER_SIZE - 1) {
           //Print Statements
           currLayer = 0;
@@ -151,21 +149,20 @@ void generate_task(void *pvParameters) {
       //print current buffer layer
       // Serial.printf("Generate function ran %d layer \n", currLayer);
       // moves temp buffer to bitBufs for flashing data
-      //Print Statements
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
       for (int i = 0; i < ROW_SIZE; i++) {
           bitBufs[currLayer].buff[i] = tempBuffer[i];
-          for (int j=0; j < COL_SIZE; j++){
-            //Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
-          }
-          //Serial.printf("\n");
       }
-      //Serial.printf("\n");
+      //     for (int j=0; j < COL_SIZE; j++){
+      //       Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
+      //     }
+      //     Serial.printf("\n");
+      // }
+      // Serial.printf("\n");
 
       xSemaphoreGive(bitBufs[currLayer].mutex);
 
       //update layer for every loop
-      //Print Statements
       if (currLayer >= LAYER_SIZE-1) {
         currLayer = 0;
         //Serial.printf("Current Layer is: %d", currLayer);
@@ -187,7 +184,7 @@ void generate_task(void *pvParameters) {
 
 void flash_task(void *pvParameters) {
   // to run at a certain frequency
-  const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
+  const TickType_t xFrequency = 16 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();  // get initial time t0
 
@@ -197,15 +194,11 @@ void flash_task(void *pvParameters) {
 
     #if FLASH_TASK_EN 
       #if LOGGING 
-        //Serial.println("Enters flash task");
+        Serial.println("Enters flash task");
       #endif
-
-      Serial.printf("Current Layer is: %d", currLayer);
-      Serial.printf("\n");
       // Takes the mutex
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
       //upload a layer of bits to shift register
-      Serial.printf("Printing Layer Write: \n\n");
       layer_write(&bitBufs[currLayer]);
       xSemaphoreGive(bitBufs[currLayer].mutex);
 
@@ -223,7 +216,6 @@ void flash_task(void *pvParameters) {
       //********************************************************//
       //update layer flag for upcoming layer
       currLayer++;
-
       //reset counter once it reaches final layer
       if(currLayer >= LAYER_SIZE){
         currLayer = 0;
@@ -236,6 +228,18 @@ void flash_task(void *pvParameters) {
 void setup() {
   Serial.begin(115200);
   esp_task_wdt_init(10, false); // Increase the timeout to 10 seconds
+  //set pinModes
+  pinMode(Layer, OUTPUT);
+  pinMode(Row1, OUTPUT);
+  pinMode(Row2, OUTPUT);
+  pinMode(Row3, OUTPUT);
+  pinMode(Row4, OUTPUT);
+  pinMode(Row5, OUTPUT);
+  pinMode(Row6, OUTPUT);
+  pinMode(Row7, OUTPUT);
+  pinMode(Row8, OUTPUT);
+  pinMode(row_clk, OUTPUT);
+  pinMode(layer_clk, OUTPUT);
   //set pinModes
   pinMode(Layer, OUTPUT);
   pinMode(Row1, OUTPUT);
