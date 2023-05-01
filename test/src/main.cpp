@@ -30,11 +30,10 @@ void serial_task(void *pvParameters) {
     strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
   #else
     //Initializers for serial read
-    uint8_t numChars = 512;
+    unsigned int numChars = 512;
     char serialBuffer[numChars+1];
-    uint8_t ndx = 0;
-    char endMarker = '\n';
-    FILE *fptr;  // to write to the file
+    unsigned int ndx = 0;
+    char endMarker = '>';
   #endif
   
   bool readyToProcess = false;
@@ -55,7 +54,6 @@ void serial_task(void *pvParameters) {
       #endif
       if (readyToProcess) { //priortize processing? this will be blocked if no mutex is available tho and might overflow the buffer 
         // DO PREPROCESSING TO FILL COORDINATE BUFFERS
-        
         //xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); 
         // // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
         // // 2.3. Return the mutex
@@ -72,22 +70,24 @@ void serial_task(void *pvParameters) {
         
       }
       #if LABVIEW
-        else if (Serial.available()){ // non-blocking
-          Serial.println("Billy is dumb");
-          char ch = Serial.read();
-          if (ch != endMarker) {
-            serialBuffer[ndx] = ch;
-            ndx++;
-            if (ndx >= numChars) { // ring buffer loop-around mechanism
-                ndx = 0;
+        else {
+          while (Serial.available()>0) { // non-blocking
+            char ch = Serial.read();
+            Serial.print(ch);
+            if (ch != endMarker) {
+              serialBuffer[ndx] = ch;
+              ndx++;
+              if (ndx >= numChars) { // ring buffer loop-around mechanism
+                  ndx = 0;
+              }
+            } else { 
+              // Serial.println("Billy is smart");
+              serialBuffer[ndx] = '\0';
+              // Serial.println(serialBuffer);
+              process_serial_string(serialBuffer, layer_points, points_count);
+              // readyToProcess = true;
+              ndx = 0;
             }
-          } else { 
-            Serial.println("Billy is smart");
-            serialBuffer[ndx] = '\0';
-            Serial.println(serialBuffer);
-            process_serial_string(serialBuffer, layer_points, points_count);
-            readyToProcess = true;
-            ndx = 0;
           }
         }
       #endif
