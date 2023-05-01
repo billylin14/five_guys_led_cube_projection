@@ -8,8 +8,8 @@ uint8_t row_flag;
 
 
 //timing
-long int t1;
-long int t2;
+//long int t1;
+//long int t2;
 
 #if TEST
 
@@ -36,46 +36,30 @@ void temp_buffer_creation(){ //sets all bits in cube to 1
 // Initialize layer_flag to 0
 // Initialize layer_clk and row_clk to 0
 
-void layer_write(BitLayerBuff bitBufs) {
-  for (row_flag=0; row_flag<8; row_flag++){
+void layer_write(BitLayerBuff *bitBufs) {
+  for (row_flag=0; row_flag<ROW_SIZE; row_flag++){
     // data is shifted on rising edge
     digitalWrite(row_clk, 0);
     //simplify by using for loop
-    digitalWrite(Row1, GetBit(bitBufs.buff[row_flag],0)); //flash [row_flag][1st column] bit each digital wrte is 3.4E-03
-    digitalWrite(Row2, GetBit(bitBufs.buff[row_flag],1)); //flash [row_flag][2st column] bit
-    digitalWrite(Row3, GetBit(bitBufs.buff[row_flag],2)); //flash [row_flag][3st column] bit
-    digitalWrite(Row4, GetBit(bitBufs.buff[row_flag],3)); //flash [row_flag][3st column] bit
-    digitalWrite(Row5, GetBit(bitBufs.buff[row_flag],4)); //flash [row_flag][3st column] bit
-    digitalWrite(Row6, GetBit(bitBufs.buff[row_flag],5)); //flash [row_flag][3st column] bit
-    digitalWrite(Row7, GetBit(bitBufs.buff[row_flag],6)); //flash [row_flag][3st column] bit
-    digitalWrite(Row8, GetBit(bitBufs.buff[row_flag],7)); //flash [row_flag][3st column] bit
+    digitalWrite(Row1, GetBit(bitBufs->buff[row_flag],0)); //flash [row_flag][1st column] bit each digital wrte is 3.4E-03
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],0));
+    digitalWrite(Row2, GetBit(bitBufs->buff[row_flag],1)); //flash [row_flag][2st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],1));
+    digitalWrite(Row3, GetBit(bitBufs->buff[row_flag],2)); //flash [row_flag][3st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],2));
+    digitalWrite(Row4, GetBit(bitBufs->buff[row_flag],3)); //flash [row_flag][3st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],3));
+    digitalWrite(Row5, GetBit(bitBufs->buff[row_flag],4)); //flash [row_flag][3st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],4));
+    digitalWrite(Row6, GetBit(bitBufs->buff[row_flag],5)); //flash [row_flag][3st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],5));
+    digitalWrite(Row7, GetBit(bitBufs->buff[row_flag],6)); //flash [row_flag][3st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],6));
+    digitalWrite(Row8, GetBit(bitBufs->buff[row_flag],7)); //flash [row_flag][3st column] bit
+    Serial.printf("%d", GetBit(bitBufs->buff[row_flag],7));
+
+    Serial.printf("\n");
 
     digitalWrite(row_clk, 1);
     }
 }
-
-/*void setup(){
-temp_buffer_creation();
-Serial.begin(115200);
-pinMode(Layer, OUTPUT);
-pinMode(Row1, OUTPUT);
-pinMode(Row2, OUTPUT);
-pinMode(Row3, OUTPUT);
-pinMode(Row4, OUTPUT);
-pinMode(Row5, OUTPUT);
-pinMode(Row6, OUTPUT);
-pinMode(Row7, OUTPUT);
-pinMode(Row8, OUTPUT);
-pinMode(row_clk, OUTPUT);
-pinMode(layer_clk, OUTPUT);
-
-}*/
-
-//timing test 
-/*
-void loop(){
-t1 = millis();
-readlight_layer();
-t2 = millis();
-Serial.print(t2-t1); Serial.println("milliseconds");
-} */

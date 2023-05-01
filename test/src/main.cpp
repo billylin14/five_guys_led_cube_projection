@@ -2,6 +2,7 @@
 #include "main.h"
 #include "common_point.h"
 #include "stdio.h"
+#include "esp_task_wdt.h"
 
 
 // Define task handles
@@ -19,13 +20,14 @@ int points_count[LAYER_SIZE];
 
 
 void serial_task(void *pvParameters) {
-  const TickType_t xDelay = 1;  // 1 clock cycle (placeholder)
+  const TickType_t xDelay = pdMS_TO_TICKS(100);  // 100 clock cycle (placeholder)
   uint8_t currLayer = 0;
 
   //const uint8_t numChars = strlen("173824481236384712536823764837285176");
   //char serialBuffer[numChars + 1];   // an array to store the received data
   #if !LABVIEW
     const char *numString = "173824481236384712536823764837285176";
+    // 173* 824* 481* 236* 384* 712* 536* 823* 764* 837* 285* 176* // Process_to_serial works
     char serialBuffer[strlen(numString) + 1];   // Add 1 for the null terminator
     strcpy(serialBuffer, numString);  // Copy the numString into serialBuffer
   #else
@@ -41,7 +43,8 @@ void serial_task(void *pvParameters) {
 
   while (1) {
     #if LOGGING
-      Serial.println("Enters serial task");
+      //Serial.println("Enters serial task");
+      //Serial.printf("\n");
     #endif
     #if SERIAL_TASK_EN
       // read from serial buffer, convert one coord string to int x, y, z at a time
@@ -60,8 +63,8 @@ void serial_task(void *pvParameters) {
         // 2.1. Take the mutex (blocked if busy, change max delay to skip?)
         xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY);
 
-        Serial.printf("Current Layer: %d\n", currLayer);  
-        Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
+        //Serial.printf("Current Layer: %d\n", currLayer);  
+        //Serial.printf("Enters serial task, point count for current layer: %d\n", points_count[currLayer]);
 
 
         // 2.2. Fill the coordinate buffers (Critical Section - try as short as possible)
@@ -78,22 +81,26 @@ void serial_task(void *pvParameters) {
 
         // 2.3. Return the mutex
         xSemaphoreGive(coordBufs[currLayer].mutex);
-
-
+        //Print layer points and coordbuffs
         for (int i = 0; i < points_count[currLayer]; i++) {
-          Serial.printf("From Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
+          //Serial.printf("Current Layer_Points: (%d, %d)\n", layer_points[currLayer][i].x, layer_points[currLayer][i].y);
         }
-
+        Serial.printf("\n");
         for (int i = 0; i < points_count[currLayer]; i++) {
-          Serial.printf("From CoordBuffs(%d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y);
+          //Serial.printf("From CoordBuffs(%d, %d, %d)\n", coordBufs[currLayer].points[i].x, coordBufs[currLayer].points[i].y, currLayer);
         }
-
-
+        //Serial.printf("\n");
+        //Serial.printf("\n");
         if (currLayer >= LAYER_SIZE - 1) {
+          //Print Statements
           currLayer = 0;
+          //Serial.printf("Current Layer: %d\n", currLayer);  
+          //Serial.printf("\n");
           readyToProcess = false;
         } else {
           currLayer++;
+          //Serial.printf("Current Layer: %d\n", currLayer); 
+          //Serial.printf("\n");
         }
         
       }
@@ -114,33 +121,52 @@ void serial_task(void *pvParameters) {
         }
       #endif
     #endif
-  vTaskDelay(xDelay); // Delay 1 cycle
+  vTaskDelay(xDelay); // Delay 100 cycle
   }
 }
 
 void generate_task(void *pvParameters) {
-  const TickType_t xDelay = pdMS_TO_TICKS(100);
+  const TickType_t xDelay = pdMS_TO_TICKS(50); //1/2 the delay time of serial
   uint8_t currLayer = 0;
   bitset_t tempBuffer[ROW_SIZE]; // Temporary storage for buffer
 
   while (1) {
     #if LOGGING 
-      Serial.println("Enters generate task");
+      //Serial.println("Enters generate task");
     #endif
     #if GENERATE_TASK_EN
       // Take mutexes (blocked if any is unavailable)
-      // xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); // change max delay to skip?
+      xSemaphoreTake(coordBufs[currLayer].mutex, portMAX_DELAY); // change max delay to skip?
       // // Convert coordinates to bitmaps (generate.c)
-      // // maybe a temporary storage here can help split up the critical section into two?
-      // xSemaphoreGive(coordBufs[currLayer].mutex);
+      fill_temp_buffer_with_coords(tempBuffer, &coordBufs[currLayer]); //check if & works
+      xSemaphoreGive(coordBufs[currLayer].mutex);
+      //print current buffer layer
+      // Serial.printf("Generate function ran %d layer \n", currLayer);
+      // moves temp buffer to bitBufs for flashing data
+      //Print Statements
+      xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
+      for (int i = 0; i < ROW_SIZE; i++) {
+          bitBufs[currLayer].buff[i] = tempBuffer[i];
+          for (int j=0; j < COL_SIZE; j++){
+            //Serial.printf("%d", GetBit(bitBufs[currLayer].buff[i],j));
+          }
+          //Serial.printf("\n");
+      }
+      //Serial.printf("\n");
 
-      // xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
-      // // copy the data to bitbuf
-      // xSemaphoreGive(bitBufs[currLayer].mutex);
+      xSemaphoreGive(bitBufs[currLayer].mutex);
+
+      //update layer for every loop
+      //Print Statements
       if (currLayer >= LAYER_SIZE-1) {
         currLayer = 0;
+        //Serial.printf("Current Layer is: %d", currLayer);
+        //Serial.printf("\n");
+
       } else {
         currLayer++;
+        //Serial.printf("Current Layer is: %d", currLayer);
+        //Serial.printf("\n");
       }
 
 
@@ -153,36 +179,67 @@ void generate_task(void *pvParameters) {
 
 void flash_task(void *pvParameters) {
   // to run at a certain frequency
-  const TickType_t xFrequency = 10;
+  const TickType_t xFrequency = 30 / portTICK_PERIOD_MS;
   TickType_t xLastWakeTime;
-  BaseType_t xWasDelayed;
   xLastWakeTime = xTaskGetTickCount();  // get initial time t0
 
   uint8_t currLayer = 0;
+
   while (1) {
-    #if LOGGING 
-      Serial.println("Enters flash task");
-    #endif
-    // Wait for the clock to tick
-    xWasDelayed = xTaskDelayUntil( &xLastWakeTime, xFrequency );
 
     #if FLASH_TASK_EN 
+      #if LOGGING 
+        //Serial.println("Enters flash task");
+      #endif
+
+      Serial.printf("Current Layer is: %d", currLayer);
+      Serial.printf("\n");
       // Takes the mutex
       xSemaphoreTake(bitBufs[currLayer].mutex, portMAX_DELAY);
-      // copy the data to local to avoid blocking the access for generate to use bitBufs?
+      //upload a layer of bits to shift register
+      Serial.printf("Printing Layer Write: \n\n");
+      layer_write(&bitBufs[currLayer]);
       xSemaphoreGive(bitBufs[currLayer].mutex);
+
+      Serial.printf("\n");
       // Returns the mutex
-      if (currLayer >= LAYER_SIZE-1) {
+      //Tell 8 bit shift register to light new layer ********** //
+      digitalWrite(layer_clk,0);                                //
+      //check if flag is past 8 layers--> reset layer count     //
+      if(currLayer == 0) {                                     //
+        digitalWrite(Layer, 1);                                 //
+      } else {                                                  //
+        digitalWrite(Layer, 0);                                 //
+      }                                                         //
+      digitalWrite(layer_clk, 1);                               //
+      //********************************************************//
+      //update layer flag for upcoming layer
+      currLayer++;
+
+      //reset counter once it reaches final layer
+      if(currLayer >= LAYER_SIZE){
         currLayer = 0;
-      } else {
-        currLayer++;
       }
     #endif
+  vTaskDelayUntil( &xLastWakeTime, xFrequency );
   }
 }
 
 void setup() {
-  Serial.begin(9600); 
+  Serial.begin(115200);
+  esp_task_wdt_init(10, false); // Increase the timeout to 10 seconds
+  //set pinModes
+  pinMode(Layer, OUTPUT);
+  pinMode(Row1, OUTPUT);
+  pinMode(Row2, OUTPUT);
+  pinMode(Row3, OUTPUT);
+  pinMode(Row4, OUTPUT);
+  pinMode(Row5, OUTPUT);
+  pinMode(Row6, OUTPUT);
+  pinMode(Row7, OUTPUT);
+  pinMode(Row8, OUTPUT);
+  pinMode(row_clk, OUTPUT);
+  pinMode(layer_clk, OUTPUT); 
   // Initializes mutexes (buffer values automatically set to zero when declared as static variables)
   for (int i = 0; i < LAYER_SIZE; i++) {
     coordBufs[i].mutex = xSemaphoreCreateMutex();
@@ -194,9 +251,9 @@ void setup() {
                     "generate",        /* name of task. */
                     10000,        /* Stack size of task */
                     NULL,              /* parameter of the task */
-                    2, /* priority of the task */
+                    1, /* priority of the task */
                     &generate_handle,  /* Task handle to keep track of created task */
-                    0);                /* pin task to core 0 */                  
+                    1);                /* pin task to core 0 */                  
   xTaskCreatePinnedToCore(
                     serial_task,      /* Task function. */
                     "serial",         /* name of task. */
@@ -204,7 +261,7 @@ void setup() {
                     NULL,             /* parameter of the task */
                     2,  /* priority of the task */
                     &serial_handle,   /* Task handle to keep track of created task */
-                    0);               /* pin task to core 0 */                  
+                    1);               /* pin task to core 0 */                  
   xTaskCreatePinnedToCore(
                     flash_task,      /* Task function. */
                     "flash",         /* name of task. */
@@ -212,7 +269,8 @@ void setup() {
                     NULL,            /* parameter of the task */
                     1,  /* priority of the task */
                     &flash_handle,   /* Task handle to keep track of created task */
-                    1);              /* pin task to core 1 */   
+                    0);              /* pin task to core 1 */
+                    //Change to run every __ms   
 
 }
 

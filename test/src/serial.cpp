@@ -17,9 +17,9 @@ void process_serial_string(char *serial_string, point_t layer_points[LAYER_SIZE]
     } 
 
     for (size_t i = 0; i < len-1; i += 3) { //i in order of xyz* 
-        int x = serial_string[i] - '0';
-        int y = serial_string[i + 1] - '0';
-        int z = serial_string[i + 2] - '0'; //The variable z in the code represents the current layer
+        int x = serial_string[i] - '1';
+        int y = serial_string[i + 1] - '1';
+        int z = serial_string[i + 2] - '1'; //The variable z in the code represents the current layer
 
         if (x >= 0 && x < ROW_SIZE && y >= 0 && y < COL_SIZE && z >= 0 && z < LAYER_SIZE) {
             layer_points[z][points_count[z]].x = x; //The .x at the end means assigning the value of x to the x field of that point_t struct
