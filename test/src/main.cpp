@@ -104,17 +104,21 @@ void serial_task(void *pvParameters) {
         
       }
       #if LABVIEW
-        else {
-          while (Serial.available()>0) { // non-blocking
+          while (Serial.available() > 0) { // non-blocking
             char ch = Serial.read();
-            Serial.print(ch);
+            Serial.print("Received: ");
+            Serial.println(ch);
             if (ch != endMarker) {
               serialBuffer[ndx] = ch;
               ndx++;
               if (ndx >= numChars) { // ring buffer loop-around mechanism
-                  ndx = 0;
+                ndx = 0;
               }
-            } else { 
+              Serial.print("Buffer index: ");
+              Serial.println(ndx);
+              Serial.print("Buffer content: ");
+              Serial.println(serialBuffer);
+            } else {
               // Serial.println("Billy is smart");
               serialBuffer[ndx] = '\0';
               // Serial.println(serialBuffer);
@@ -123,8 +127,7 @@ void serial_task(void *pvParameters) {
               ndx = 0;
             }
           }
-        }
-      #endif
+        #endif
     #endif
   vTaskDelay(xDelay); // Delay 100 cycle
   }
