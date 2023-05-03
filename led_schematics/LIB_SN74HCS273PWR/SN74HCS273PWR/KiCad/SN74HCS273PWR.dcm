@@ -1,9 +1,0 @@
-EESchema-DOCLIB  Version 2.0
-#
-$CMP SN74HCS273PWR
-D Flip Flops Octal D-type flip-flops with clear with Schmitt-trigger inputs
-K
-F https://www.ti.com/general/docs/suppproductinfo.tsp?distId=26&gotoUrl=https://www.ti.com/lit/gpn/sn74hcs273
-$ENDCMP
-#
-#End Doc Library
